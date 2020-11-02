@@ -1,6 +1,8 @@
 'use strict';
 
-const FONT = '48px monospace';
+const FONT = '12px monospace';
+const FONT_STYLE = '#ffffff';
+const WINDOW_STYLE = 'rgba(0, 0, 0, 0.75)';
 const CHARACTER_WIDTH = 8;
 const CHARACTER_HEIGHT = 9;
 const WIDTH = 128;
@@ -62,20 +64,35 @@ const gameMap = [
 const DrawMain = () => {
     const $game = $gameScreen.getContext('2d');
 
-    for (let y = 0; y < 20; y++) {
-        for (let x = 0; x < 20; x++) {
-            let playerX = gamePlayerX + x;
-            let playerY = gamePlayerY + y;
+    for (let dy = -7; dy <= 7; dy++) {
+        let y = dy + 7;
+        let playerY = (gamePlayerY + dy + MAP_HEIGHT) % MAP_HEIGHT;
 
-            DrawTile($game, x * TILE_SIZE, y * TILE_SIZE, gameMap[playerY * MAP_WIDTH + playerX]);   
+        for (let dx = -8; dx <= 8; dx++) {
+            let x = dx +8;
+            let playerX = (gamePlayerX + dx + MAP_WIDTH) % MAP_WIDTH;
+
+            DrawTile(
+                $game, x * TILE_SIZE - TILE_SIZE / 2, y * TILE_SIZE, 
+                gameMap[playerY * MAP_WIDTH + playerX]
+            );   
         }        
     }
 
-    $game.drawImage(gameImgPlayer, CHARACTER_WIDTH, 0, CHARACTER_WIDTH,
-         CHARACTER_HEIGHT, WIDTH / 2, HEIGHT / 2, CHARACTER_WIDTH, CHARACTER_HEIGHT
+    $game.fillStyle = '#ff0000';
+    $game.fillRect(0, HEIGHT / 2 - 1, WIDTH, 2);
+    $game.fillRect(WIDTH / 2 - 1, 0, 2, HEIGHT);
+
+    $game.drawImage(
+        gameImgPlayer, CHARACTER_WIDTH, 0, CHARACTER_WIDTH, CHARACTER_HEIGHT, 
+        WIDTH / 2 - CHARACTER_WIDTH / 2, HEIGHT / 2 - CHARACTER_HEIGHT + TILE_SIZE / 2, CHARACTER_WIDTH, CHARACTER_HEIGHT
     );
-    //$game.font = FONT;
-    //$game.fillText('JRPG' + gameFrame, gameFrame / 10, 64);
+
+    $game.fillStyle = WINDOW_STYLE;
+    $game.fillRect(20, 103, 105, 15);
+    $game.font = FONT;
+    $game.fillStyle = FONT_STYLE;
+    $game.fillText(`x=${gamePlayerX} y=${gamePlayerY}`, 25, 115);
 };
 
 const DrawTile = (game, x, y, index) => {
@@ -121,7 +138,7 @@ const WmSize = () => {
 
     gameWidth / WIDTH < gameHeight / HEIGHT ? 
         gameHeight = gameWidth * HEIGHT / WIDTH :
-        gameWidth = gameHeight / WIDTH * HEIGHT;
+        gameWidth = gameHeight * WIDTH / HEIGHT;
 };
 
 const WmTimer = () => {
