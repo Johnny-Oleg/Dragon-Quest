@@ -1,6 +1,8 @@
 'use strict';
 
 const FONT = '48px monospace';
+const CHARACTER_WIDTH = 8;
+const CHARACTER_HEIGHT = 9;
 const WIDTH = 128;
 const HEIGHT = 120;
 const MAP_WIDTH = 32;
@@ -11,10 +13,16 @@ const TILE_ROW = 4;
 const TILE_SIZE = 8;
 
 let gameFrame = 0;
+let gamePlayerX = 10;
+let gamePlayerY = 5;
 let gameImgMap;
+let gameImgPlayer;
 let $gameScreen;
 let gameWidth;
 let gameHeight;
+
+const gameFileMap = './img/map.png';
+const gameFilePlayer = './img/player.png';
 
 const gameMap = [
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -54,14 +62,20 @@ const gameMap = [
 const DrawMain = () => {
     const $game = $gameScreen.getContext('2d');
 
-    for (let y = 0; y < 32; y++) {
-        for (let x = 0; x < 64; x++) {
-            DrawTile($game, x * TILE_SIZE, y * TILE_SIZE, gameMap[y * MAP_WIDTH + x]);   
+    for (let y = 0; y < 20; y++) {
+        for (let x = 0; x < 20; x++) {
+            let playerX = gamePlayerX + x;
+            let playerY = gamePlayerY + y;
+
+            DrawTile($game, x * TILE_SIZE, y * TILE_SIZE, gameMap[playerY * MAP_WIDTH + playerX]);   
         }        
     }
 
-    $game.font = FONT;
-    $game.fillText('JRPG' + gameFrame, gameFrame / 10, 64);
+    $game.drawImage(gameImgPlayer, CHARACTER_WIDTH, 0, CHARACTER_WIDTH,
+         CHARACTER_HEIGHT, WIDTH / 2, HEIGHT / 2, CHARACTER_WIDTH, CHARACTER_HEIGHT
+    );
+    //$game.font = FONT;
+    //$game.fillText('JRPG' + gameFrame, gameFrame / 10, 64);
 };
 
 const DrawTile = (game, x, y, index) => {
@@ -71,6 +85,14 @@ const DrawTile = (game, x, y, index) => {
     game.drawImage(
         gameImgMap, indexX, indexY, TILE_SIZE, TILE_SIZE, x, y, TILE_SIZE, TILE_SIZE
     );  
+};
+
+const loadImages = () => {
+    gameImgMap = new Image();
+    gameImgMap.src = gameFileMap;
+
+    gameImgPlayer = new Image();
+    gameImgPlayer.src = gameFilePlayer;
 };
 
 const WmPaint = () => {
@@ -108,9 +130,18 @@ const WmTimer = () => {
     WmPaint();
 };
 
+window.onkeydown = (e) => {
+    let code = e.keyCode;
+
+    code == 37 && gamePlayerX--;
+    code == 38 && gamePlayerY--;
+    code == 39 && gamePlayerX++
+    code == 40 && gamePlayerY++;
+}
+
 window.onload = () => {
-    gameImgMap = new Image();
-    gameImgMap.src = './img/map.png';
+    loadImages();
+
     $gameScreen = document.createElement('canvas');
     $gameScreen.width = WIDTH;
     $gameScreen.height = HEIGHT;
