@@ -35,11 +35,14 @@ let gameMovingX = 0;
 let gameMovingY = 0;
 let gameItem = 0;
 let gamePhase = 0;
+let gameCursor = 0;
 let gameMessage_1 = null;
 let gameMessage_2 = null;
 let gameImgMap;
 let gameImgPlayer;
 let gameImageMonster;
+let gameImageBoss;
+let gameEnemyType;
 let $gameScreen;
 let gameWidth;
 let gameHeight;
@@ -47,8 +50,10 @@ let gameHeight;
 const gameFileMap = './img/map.png';
 const gameFilePlayer = './img/player.png';
 const gameFileMonster = './img/monster.png';
+const gameFileBoss = './img/boss.png';
 
 const gameEncounter = [0, 0, 0, 1, 0, 0, 2, 3, 0, 0, 0, 0, 0, 0, 0, 0];
+const gameMonstersNames = ['Slime', 'Rabbit', 'Knight', 'Dragon', 'Demon Lord'];
 
 const gameMap = [
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -85,14 +90,91 @@ const gameMap = [
     7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 7, 7, 7, 7, 7,
 ];
 
+const Action = () => {
+    gamePhase++;
+
+    if (gamePhase == 3) {
+        SetMessage(`The ${gameMonstersNames[gameEnemyType]} attacks!`, `${999} Damage`);
+
+        gamePhase = 7;
+
+        return;
+    }
+
+    if (gameCursor == 0) {
+        SetMessage('You attack!', `${333} Damage`);
+
+        gamePhase = 5;
+
+        return;
+    }
+
+    if (Math.random() < 0.5) {
+        SetMessage('You ran away...', null);
+
+        gamePhase = 6;
+
+        return;
+    }
+
+    SetMessage('You ran away...', 'But You have been turned around');
+};
+
+const AppearEnemy = target => {
+    gamePhase = 1;
+    gameEnemyType = target;
+
+    SetMessage('The enemy is here!', null);
+};
+
+const GainExp = amount => {
+    gameExp += amount;
+
+    while (gameLvl * (gameLvl + 1) * 2 <= gameExp) {
+        gameLvl++;
+        gameMonsterHP += 4 + Math.floor(Math.random() * 3);
+    }
+};
+
+const CommandFight = () => {
+    gamePhase = 2;
+    gameCursor = 0;
+        
+    SetMessage(' Fight', ' Run');
+};
+
 const DrawEncounter = game => {
     game.fillStyle = '#000000';
     game.fillRect(0, 0, WIDTH, HEIGHT);
 
-    game.drawImage(gameImageMonster, WIDTH / 2, HEIGHT / 2);
+
+    if (gamePhase <= 5) {
+        if (isBoss()) {
+            game.drawImage(
+                gameImageBoss, WIDTH / 2 - gameImageBoss.width / 2,
+                HEIGHT / 2 - gameImageBoss.height / 2
+            );
+        } else {
+            let w = gameImageMonster.width / 4;
+            let h = gameImageMonster.height;
+
+            game.drawImage(
+                gameImageMonster, gameEnemyType * w, 0, w, h, 
+                Math.floor(WIDTH / 2 - w / 2), 
+                Math.floor(HEIGHT / 2 - h / 2), w, h
+            );
+        }    
+    }
+
+    DrawStatus(game);
+    DrawMessage(game);
+
+    if (gamePhase == 2) {
+        game.fillText('⇒', 6, 96 + 14 * gameCursor);
+    }
 };
 
-const DrawMap = game => {
+const DrawField = game => {
     let mx = Math.floor(gamePlayerX / TILE_SIZE);
     let my = Math.floor(gamePlayerY / TILE_SIZE);
 
@@ -120,18 +202,20 @@ const DrawMap = game => {
         gameImgPlayer, (gameFrame >> 4 & 1) * CHARACTER_WIDTH, gameAngle * CHARACTER_HEIGHT, CHARACTER_WIDTH, CHARACTER_HEIGHT, 
         WIDTH / 2 - CHARACTER_WIDTH / 2, HEIGHT / 2 - CHARACTER_HEIGHT + TILE_SIZE / 2, CHARACTER_WIDTH, CHARACTER_HEIGHT
     );
+
+    game.fillStyle = WINDOW_STYLE;//!
+    game.fillRect(2, 2, 44, 37);
+
+    DrawStatus(game);
+    DrawMessage(game);//!
 };
 
 const DrawMain = () => {
     const $game = $gameScreen.getContext('2d');
 
-    gamePhase == 0 ? DrawMap($game) : DrawEncounter($game);
+    gamePhase <= 1 ? DrawField($game) : DrawEncounter($game);
 
-    $game.fillStyle = WINDOW_STYLE;
-    $game.fillRect(2, 2, 44, 37);
-
-    DrawStatus($game);
-    DrawMessage($game);
+    
 
     // $game.fillStyle = WINDOW_STYLE;
     // $game.fillRect(20, 3, 105, 15);
@@ -172,6 +256,10 @@ const DrawTile = (game, x, y, index) => {
     );  
 };
 
+const isBoss = () => {
+    return gameEnemyType == gameMonstersNames.length - 1;
+};
+
 const loadImages = () => {
     gameImgMap = new Image();
     gameImgMap.src = gameFileMap;
@@ -181,6 +269,9 @@ const loadImages = () => {
 
     gameImageMonster = new Image();
     gameImageMonster.src = gameFileMonster;
+
+    gameImageBoss = new Image();
+    gameImageBoss.src = gameFileBoss;
 };
 
 // function SetMessage(text_1, text_2 = null); // IE
@@ -235,10 +326,12 @@ const TickField = () => {
 
     if (Math.abs(gameMovingX) + Math.abs(gameMovingY) == SCROLL) {
         if (m == 8 || m == 9) {
-            SetMessage('Slay the Demon Lord!', null);
+            gameHP = gameMonsterHP;
+            SetMessage('Slay the  Demon Lord!', null);
         }
 
         if (m == 10 || m == 11) {
+            gameHP = gameMonsterHP;
             SetMessage('There\'s another village', 'in the far west!');
         }
 
@@ -256,17 +349,16 @@ const TickField = () => {
                 gamePlayerY -= TILE_SIZE;
                 SetMessage('I need a key!', null);
             } else {
-                SetMessage('The door is open.');
+                SetMessage('The door is open.', null);
             }
         }
 
         if (m == 15) {
-            SetMessage('Demon Lord is defeated', 'and peace has returned to the world.');
+            AppearEnemy(gameMonstersNames.length - 1);
         }
 
         if (Math.random() * 4 < gameEncounter[m]) {
-            gamePhase = 1;
-            SetMessage('The enemy is here!', null);
+            AppearEnemy(0);
         }
     }   
 
@@ -324,7 +416,62 @@ window.onkeydown = (e) => {
 
     gameKey[code] = 1;
 
-    gamePhase == 1 && (gamePhase = 0);
+    if (gamePhase == 1) {
+        // gamePhase = 2;
+        // SetMessage(' Fight', ' Run away');
+        CommandFight();
+
+        return;
+    }
+
+    if (gamePhase == 2) {
+        if (code == 13 || code == 90) {
+            Action();
+        } else {gameCursor = 1 - gameCursor}
+
+        return;
+    }
+
+    if (gamePhase == 3) {
+        Action();
+
+        return;
+    }
+
+    if (gamePhase == 4) {
+        CommandFight();
+
+        return;
+    };
+
+    if (gamePhase == 5) {
+        gamePhase = 6;
+
+        GainExp(gameEnemyType + 1);
+        SetMessage('The Enemy has been defeated!', null);
+
+        return;
+    }
+
+    if (gamePhase == 6) {
+        if (isBoss() && gameCursor == 0) {
+            SetMessage('Demon Lord is defeated', 'and peace has returned to the world.');
+
+            return;
+        }    
+
+        gamePhase = 0;
+    }
+
+    if (gamePhase == 7) {
+        SetMessage('You died!...', null);
+
+        return;
+    }
+
+    if (gamePhase == 8) {
+        SetMessage('Game over', null);
+    }
 
     gameMessage_1 = null;
 };
@@ -344,8 +491,7 @@ window.onload = () => {
 
     WmSize();    
 
-    window.addEventListener('resize', () => {WmSize();});
-    setInterval(() => {
-        WmTimer();
-    }, INTERVAL);
+    window.addEventListener('resize', () => WmSize());
+
+    setInterval(() => WmTimer(), INTERVAL);
 };
