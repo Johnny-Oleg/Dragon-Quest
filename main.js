@@ -5,6 +5,7 @@ const FONT_STYLE = '#ffffff';
 const WINDOW_STYLE = 'rgba(0, 0, 0, 0.75)';
 const CHARACTER_WIDTH = 8;
 const CHARACTER_HEIGHT = 9;
+const START_HP = 20;
 const START_X = 15;
 const START_Y = 17;
 const WIDTH = 128;
@@ -24,10 +25,15 @@ const gameKey = new Uint8Array(0x100);
 
 let gameAngle = 0;
 let gameFrame = 0;
+let gameExp = 0;
+let gameHP = START_HP;
+let gameMonsterHP = START_HP;
+let gameLvl = 1; 
 let gamePlayerX = START_X * TILE_SIZE + TILE_SIZE / 2;
 let gamePlayerY = START_Y * TILE_SIZE + TILE_SIZE / 2;
 let gameMovingX = 0;
 let gameMovingY = 0;
+let gameItem = 0;
 let gameMessage_1 = null;
 let gameMessage_2 = null;
 let gameImgMap;
@@ -105,16 +111,20 @@ const DrawMain = () => {
         WIDTH / 2 - CHARACTER_WIDTH / 2, HEIGHT / 2 - CHARACTER_HEIGHT + TILE_SIZE / 2, CHARACTER_WIDTH, CHARACTER_HEIGHT
     );
 
+    $game.fillStyle = WINDOW_STYLE;
+    $game.fillRect(2, 2, 44, 37);
+
+    DrawStatus($game);
     DrawMessage($game);
 
-    $game.fillStyle = WINDOW_STYLE;
-    $game.fillRect(20, 3, 105, 15);
-    $game.font = FONT;
-    $game.fillStyle = FONT_STYLE;
-    $game.fillText(
-        `x=${gamePlayerX} y=${gamePlayerY} m=${gameMap[my * MAP_WIDTH + mx]}`,
-        25, 15
-    );
+    // $game.fillStyle = WINDOW_STYLE;
+    // $game.fillRect(20, 3, 105, 15);
+    // $game.font = FONT;
+    // $game.fillStyle = FONT_STYLE;
+    // $game.fillText(
+    //     `x=${gamePlayerX} y=${gamePlayerY} m=${gameMap[my * MAP_WIDTH + mx]}`,
+    //     25, 15
+    // );
 };
 
 const DrawMessage = game => {
@@ -124,11 +134,19 @@ const DrawMessage = game => {
     game.fillRect(4, 84, 120, 30);
     game.font = FONT;
     game.fillStyle = FONT_STYLE;
-
     game.fillText(gameMessage_1, 6, 96);
+
     gameMessage_2 && game.fillText(gameMessage_2, 6, 110); //!!
 };
 
+const DrawStatus = game => {
+    game.font = FONT;
+    game.fillStyle = FONT_STYLE;
+    game.fillText(`Lv ${gameLvl}`, 4, 13);
+    game.fillText(`HP ${gameHP}`, 4, 25);
+    game.fillText(`Exp ${gameExp}`, 4, 37);
+};
+ 
 const DrawTile = (game, x, y, index) => {
     const indexX = (index % TILE_COLUMN) * TILE_SIZE;
     const indexY = Math.floor(index / TILE_COLUMN) * TILE_SIZE;
@@ -165,7 +183,7 @@ const Sign = value => {
 };
 
 const TickField = () => {
-    if (gameMovingX !== 0 || gameMovingY !== 0) {
+    if (gameMovingX !== 0 || gameMovingY !== 0 || gameMessage_1) {
 
     } else if (gameKey[37]) {   
         gameAngle = 1;                       //
@@ -210,16 +228,25 @@ const TickField = () => {
         }
 
         if (m == 13) {
+            gameItem = 1;
             SetMessage('I got the key!', null);
         }
 
         if (m == 14) {
-            gamePlayerY -= TILE_SIZE;
-            SetMessage('I need a key!', null);
+            if (gameItem == 0) {
+                gamePlayerY -= TILE_SIZE;
+                SetMessage('I need a key!', null);
+            } else {
+                SetMessage('The door is open.');
+            }
         }
 
         if (m == 15) {
             SetMessage('Demon Lord is defeated', 'and peace has returned to the world.');
+        }
+
+        if (Math.random() * 4 < 1) {
+            SetMessage('The enemy is here!', null);
         }
     }   
 
@@ -272,6 +299,8 @@ const WmTimer = () => {
 
 window.onkeydown = (e) => {
     let code = e.keyCode;
+
+    if (gameKey[code] != 0) return;
 
     gameKey[code] = 1;
 
