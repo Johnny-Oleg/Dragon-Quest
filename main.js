@@ -14,7 +14,7 @@ const SCREEN_HEIGHT = 8;
 const MAP_WIDTH = 32;
 const MAP_HEIGHT = 32;
 const INTERVAL = 33;
-const SCROLL = 4;
+const SCROLL = 1;
 const SMOOTH = 0;
 const TILE_COLUMN = 4;
 const TILE_ROW = 4;
@@ -28,7 +28,8 @@ let gamePlayerX = START_X * TILE_SIZE + TILE_SIZE / 2;
 let gamePlayerY = START_Y * TILE_SIZE + TILE_SIZE / 2;
 let gameMovingX = 0;
 let gameMovingY = 0;
-let gameMessage = null;
+let gameMessage_1 = null;
+let gameMessage_2 = null;
 let gameImgMap;
 let gameImgPlayer;
 let $gameScreen;
@@ -117,12 +118,15 @@ const DrawMain = () => {
 };
 
 const DrawMessage = game => {
+    if (!gameMessage_1) return;
+
     game.fillStyle = WINDOW_STYLE;
     game.fillRect(4, 84, 120, 30);
     game.font = FONT;
     game.fillStyle = FONT_STYLE;
 
-    game.fillText(gameMessage, 6, 96);
+    game.fillText(gameMessage_1, 6, 96);
+    gameMessage_2 && game.fillText(gameMessage_2, 6, 110); //!!
 };
 
 const DrawTile = (game, x, y, index) => {
@@ -140,6 +144,13 @@ const loadImages = () => {
 
     gameImgPlayer = new Image();
     gameImgPlayer.src = gameFilePlayer;
+};
+
+// function SetMessage(text_1, text_2 = null); // IE
+
+const SetMessage = (text_1, text_2) => {
+    gameMessage_1 = text_1;
+    gameMessage_2 = text_2;
 };
 
 const Sign = value => {
@@ -185,9 +196,32 @@ const TickField = () => {
         gameMovingY = 0;
     }
 
-    if (m == 8 || m == 9) {gameMessage = 'Slay the Demon Lord!'}
-    if (m == 10 || m == 11) {gameMessage = 'There\'s another village in the far west!'}
+    if (Math.abs(gameMovingX) + Math.abs(gameMovingY) == SCROLL) {
+        if (m == 8 || m == 9) {
+            SetMessage('Slay the Demon Lord!', null);
+        }
 
+        if (m == 10 || m == 11) {
+            SetMessage('There\'s another village', 'in the far west!');
+        }
+
+        if (m == 12) {
+            SetMessage('The key is', 'in a cave!');
+        }
+
+        if (m == 13) {
+            SetMessage('I got the key!', null);
+        }
+
+        if (m == 14) {
+            gamePlayerY -= TILE_SIZE;
+            SetMessage('I need a key!', null);
+        }
+
+        if (m == 15) {
+            SetMessage('Demon Lord is defeated', 'and peace has returned to the world.');
+        }
+    }   
 
     gamePlayerX += Sign(gameMovingX) * SCROLL;
     gamePlayerY += Sign(gameMovingY) * SCROLL;
@@ -240,6 +274,8 @@ window.onkeydown = (e) => {
     let code = e.keyCode;
 
     gameKey[code] = 1;
+
+    gameMessage_1 = null;
 };
 
 window.onkeyup = (e) => {
