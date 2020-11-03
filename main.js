@@ -34,16 +34,21 @@ let gamePlayerY = START_Y * TILE_SIZE + TILE_SIZE / 2;
 let gameMovingX = 0;
 let gameMovingY = 0;
 let gameItem = 0;
+let gamePhase = 0;
 let gameMessage_1 = null;
 let gameMessage_2 = null;
 let gameImgMap;
 let gameImgPlayer;
+let gameImageMonster;
 let $gameScreen;
 let gameWidth;
 let gameHeight;
 
 const gameFileMap = './img/map.png';
 const gameFilePlayer = './img/player.png';
+const gameFileMonster = './img/monster.png';
+
+const gameEncounter = [0, 0, 0, 1, 0, 0, 2, 3, 0, 0, 0, 0, 0, 0, 0, 0];
 
 const gameMap = [
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -80,9 +85,14 @@ const gameMap = [
     7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 7, 7, 7, 7, 7,
 ];
 
-const DrawMain = () => {
-    const $game = $gameScreen.getContext('2d');
+const DrawEncounter = game => {
+    game.fillStyle = '#000000';
+    game.fillRect(0, 0, WIDTH, HEIGHT);
 
+    game.drawImage(gameImageMonster, WIDTH / 2, HEIGHT / 2);
+};
+
+const DrawMap = game => {
     let mx = Math.floor(gamePlayerX / TILE_SIZE);
     let my = Math.floor(gamePlayerY / TILE_SIZE);
 
@@ -95,7 +105,7 @@ const DrawMain = () => {
             let playerX = (tx + MAP_WIDTH) % MAP_WIDTH;
 
             DrawTile(
-                $game, tx * TILE_SIZE + WIDTH / 2 - gamePlayerX, 
+                game, tx * TILE_SIZE + WIDTH / 2 - gamePlayerX, 
                 ty * TILE_SIZE + HEIGHT / 2 - gamePlayerY, 
                 gameMap[playerY * MAP_WIDTH + playerX]
             );   
@@ -106,10 +116,16 @@ const DrawMain = () => {
     // $game.fillRect(0, HEIGHT / 2 - 1, WIDTH, 2);
     // $game.fillRect(WIDTH / 2 - 1, 0, 2, HEIGHT);
 
-    $game.drawImage(
+    game.drawImage(
         gameImgPlayer, (gameFrame >> 4 & 1) * CHARACTER_WIDTH, gameAngle * CHARACTER_HEIGHT, CHARACTER_WIDTH, CHARACTER_HEIGHT, 
         WIDTH / 2 - CHARACTER_WIDTH / 2, HEIGHT / 2 - CHARACTER_HEIGHT + TILE_SIZE / 2, CHARACTER_WIDTH, CHARACTER_HEIGHT
     );
+};
+
+const DrawMain = () => {
+    const $game = $gameScreen.getContext('2d');
+
+    gamePhase == 0 ? DrawMap($game) : DrawEncounter($game);
 
     $game.fillStyle = WINDOW_STYLE;
     $game.fillRect(2, 2, 44, 37);
@@ -162,6 +178,9 @@ const loadImages = () => {
 
     gameImgPlayer = new Image();
     gameImgPlayer.src = gameFilePlayer;
+
+    gameImageMonster = new Image();
+    gameImageMonster.src = gameFileMonster;
 };
 
 // function SetMessage(text_1, text_2 = null); // IE
@@ -245,7 +264,8 @@ const TickField = () => {
             SetMessage('Demon Lord is defeated', 'and peace has returned to the world.');
         }
 
-        if (Math.random() * 4 < 1) {
+        if (Math.random() * 4 < gameEncounter[m]) {
+            gamePhase = 1;
             SetMessage('The enemy is here!', null);
         }
     }   
@@ -303,6 +323,8 @@ window.onkeydown = (e) => {
     if (gameKey[code] != 0) return;
 
     gameKey[code] = 1;
+
+    gamePhase == 1 && (gamePhase = 0);
 
     gameMessage_1 = null;
 };
