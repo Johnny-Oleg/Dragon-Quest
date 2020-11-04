@@ -1,5 +1,4 @@
-'use strict';
-
+'use strict';;
 const FONT = '12px monospace';
 const FONT_STYLE = '#ffffff';
 const WINDOW_STYLE = 'rgba(0, 0, 0, 0.75)';
@@ -29,7 +28,7 @@ let gameExp = 0;
 let gameHP = START_HP;
 let gameMonsterHP = START_HP;
 let gameEnemyTypeHP;
-let gameLvl = 1; 
+let gameLvl = 1;
 let gamePlayerX = START_X * TILE_SIZE + TILE_SIZE / 2;
 let gamePlayerY = START_Y * TILE_SIZE + TILE_SIZE / 2;
 let gameMovingX = 0;
@@ -45,7 +44,7 @@ let gameImageMonster;
 let gameImageBoss;
 let gameEnemyType;
 let battleTurnOrder;
-let $gameScreen;
+// let $gameScreen;
 let gameWidth;
 let gameHeight;
 
@@ -106,7 +105,7 @@ const Action = () => {
     if (gameHP <= 0) { 
         gameHP = 0;   
         gamePhase = 7;
-    };//?
+    };
 
         return;
     }
@@ -225,7 +224,7 @@ const DrawField = game => {
 };
 
 const DrawMain = () => {
-    const $game = $gameScreen.getContext('2d');
+    const $game = TUG.GR.mG;
 
     gamePhase <= 1 ? DrawField($game) : DrawEncounter($game);
 
@@ -272,7 +271,7 @@ const DrawTextR = (game, str, x, y) => {
     game.fillText(str, x, y);
     game.textAlign = 'left';
 };
- 
+
 const DrawTile = (game, x, y, index) => {
     const indexX = (index % TILE_COLUMN) * TILE_SIZE;
     const indexY = Math.floor(index / TILE_COLUMN) * TILE_SIZE;
@@ -305,17 +304,6 @@ const loadImages = () => {
 const SetMessage = (text_1, text_2) => {
     gameMessage_1 = text_1;
     gameMessage_2 = text_2;
-};
-
-const Sign = value => {
-    if (value == 0) {
-        return 0;
-    }
-    if (value < 0) {
-        return -1;
-    }
-
-    return 1;
 };
 
 const TickField = () => {
@@ -403,10 +391,10 @@ const TickField = () => {
         }
     }   
 
-    gamePlayerX += Sign(gameMovingX) * SCROLL;
-    gamePlayerY += Sign(gameMovingY) * SCROLL;
-    gameMovingX -= Sign(gameMovingX) * SCROLL;
-    gameMovingY -= Sign(gameMovingY) * SCROLL;
+    gamePlayerX += TUG.Sign(gameMovingX) * SCROLL;
+    gamePlayerY += TUG.Sign(gameMovingY) * SCROLL;
+    gameMovingX -= TUG.Sign(gameMovingX) * SCROLL;
+    gameMovingY -= TUG.Sign(gameMovingY) * SCROLL;
 
     gamePlayerX += (MAP_WIDTH * TILE_SIZE);
     gamePlayerX %= (MAP_WIDTH * TILE_SIZE);
@@ -421,7 +409,7 @@ const WmPaint = () => {
     const $game = $canvas.getContext('2d');
 
     $game.drawImage(
-        $gameScreen, 0, 0, $gameScreen.width, $gameScreen.height,
+        TUG.GR.mCanvas, 0, 0, TUG.GR.mCanvas.width, TUG.GR.mCanvas.height,
         0, 0, gameWidth, gameHeight
     );
 };
@@ -443,15 +431,17 @@ const WmSize = () => {
         gameWidth = gameHeight * WIDTH / HEIGHT;
 };
 
-const WmTimer = () => {
+TUG.onTimer = function(d) { //!
     if (!gameMessage_1) {
-        gameFrame++;
+        while (d--) {
+            gameFrame++;
 
-        TickField();
+            TickField();
+        }    
     }    
 
     WmPaint();
-};
+}
 
 window.onkeydown = (e) => {
     let code = e.keyCode;
@@ -533,13 +523,8 @@ window.onkeyup = (e) => {
 window.onload = () => {
     loadImages();
 
-    $gameScreen = document.createElement('canvas');
-    $gameScreen.width = WIDTH;
-    $gameScreen.height = HEIGHT;
-
     WmSize();    
 
     window.addEventListener('resize', () => WmSize());
-
-    setInterval(() => WmTimer(), INTERVAL);
+    TUG.init();
 };
