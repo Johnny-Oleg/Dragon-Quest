@@ -28,6 +28,7 @@ let gameFrame = 0;
 let gameExp = 0;
 let gameHP = START_HP;
 let gameMonsterHP = START_HP;
+let gameEnemyTypeHP;
 let gameLvl = 1; 
 let gamePlayerX = START_X * TILE_SIZE + TILE_SIZE / 2;
 let gamePlayerY = START_Y * TILE_SIZE + TILE_SIZE / 2;
@@ -43,6 +44,7 @@ let gameImgPlayer;
 let gameImageMonster;
 let gameImageBoss;
 let gameEnemyType;
+let battleTurnOrder;
 let $gameScreen;
 let gameWidth;
 let gameHeight;
@@ -93,18 +95,29 @@ const gameMap = [
 const Action = () => {
     gamePhase++;
 
-    if (gamePhase == 3) {
-        SetMessage(`The ${gameMonstersNames[gameEnemyType]} attacks!`, `${999} Damage`);
+    if (((gamePhase + battleTurnOrder) & 1) == 0) {
+        const enemyDamage = calculateDamage(gameEnemyType + 2);
 
+        SetMessage(`The ${gameMonstersNames[gameEnemyType]} attacks!`, `${enemyDamage} Damage`);
+
+        gameHP -= enemyDamage;
+
+       //gameHP <= 0 && (gamePhase = 7);//?
+    if (gameHP <= 0) { 
+        gameHP = 0;   
         gamePhase = 7;
+    };//?
 
         return;
     }
 
     if (gameCursor == 0) {
-        SetMessage('You attack!', `${333} Damage`);
+        const heroDamage = calculateDamage(gameLvl + 1);
 
-        gamePhase = 5;
+        SetMessage('You attack!', `${heroDamage} Damage`);
+
+        gameEnemyTypeHP -= heroDamage;
+        gameEnemyTypeHP <= 0 && (gamePhase = 5);
 
         return;
     }
@@ -122,6 +135,7 @@ const Action = () => {
 
 const AppearEnemy = target => {
     gamePhase = 1;
+    gameEnemyTypeHP = target * 3 + 5;
     gameEnemyType = target;
 
     SetMessage('The enemy is here!', null);
@@ -242,9 +256,21 @@ const DrawMessage = game => {
 const DrawStatus = game => {
     game.font = FONT;
     game.fillStyle = FONT_STYLE;
-    game.fillText(`Lv ${gameLvl}`, 4, 13);
-    game.fillText(`HP ${gameHP}`, 4, 25);
-    game.fillText(`Exp ${gameExp}`, 4, 37);
+   // game.fillText(`Lv ${gameLvl}`, 4, 13);
+    game.fillText(`Lv `, 4, 13);
+    DrawTextR(game, gameLvl, 36, 13);
+    //game.fillText(`HP ${gameHP}`, 4, 25);
+    game.fillText(`HP `, 4, 25);
+    DrawTextR(game, gameHP, 36, 25);
+   // game.fillText(`Exp ${gameExp}`, 4, 37);
+    game.fillText(`Exp `, 4, 37);
+    DrawTextR(game, gameExp, 36, 37);
+};
+
+const DrawTextR = (game, str, x, y) => {
+    game.textAlign = 'right';
+    game.fillText(str, x, y);
+    game.textAlign = 'left';
 };
  
 const DrawTile = (game, x, y, index) => {
@@ -256,9 +282,9 @@ const DrawTile = (game, x, y, index) => {
     );  
 };
 
-const isBoss = () => {
-    return gameEnemyType == gameMonstersNames.length - 1;
-};
+const calculateDamage = value => Math.floor(value * (1 + Math.random()));
+
+const isBoss = () => gameEnemyType == gameMonstersNames.length - 1;
 
 const loadImages = () => {
     gameImgMap = new Image();
@@ -293,7 +319,9 @@ const Sign = value => {
 };
 
 const TickField = () => {
-    if (gameMovingX !== 0 || gameMovingY !== 0 || gameMessage_1) {
+    if (gamePhase != 0) return;
+
+    if (gameMovingX != 0 || gameMovingY != 0 || gameMessage_1) {
 
     } else if (gameKey[37]) {   
         gameAngle = 1;                       //
@@ -336,6 +364,7 @@ const TickField = () => {
         }
 
         if (m == 12) {
+            gameHP = gameMonsterHP;
             SetMessage('The key is', 'in a cave!');
         }
 
@@ -358,7 +387,19 @@ const TickField = () => {
         }
 
         if (Math.random() * 4 < gameEncounter[m]) {
-            AppearEnemy(0);
+            let target = Math.abs(
+                gamePlayerX / TILE_SIZE - START_X) + 
+                Math.abs(gamePlayerY / TILE_SIZE - START_Y
+            );
+
+            m == 6 && (target += 8);
+            m == 7 && (target += 16);
+
+            target += Math.random() * 8;
+            target = Math.floor(target / 16);
+            target = Math.min(target, gameMonstersNames.length - 2);
+
+            AppearEnemy(target);
         }
     }   
 
@@ -403,9 +444,12 @@ const WmSize = () => {
 };
 
 const WmTimer = () => {
-    gameFrame++;
+    if (!gameMessage_1) {
+        gameFrame++;
 
-    TickField();
+        TickField();
+    }    
+
     WmPaint();
 };
 
@@ -417,8 +461,6 @@ window.onkeydown = (e) => {
     gameKey[code] = 1;
 
     if (gamePhase == 1) {
-        // gamePhase = 2;
-        // SetMessage(' Fight', ' Run away');
         CommandFight();
 
         return;
@@ -426,6 +468,8 @@ window.onkeydown = (e) => {
 
     if (gamePhase == 2) {
         if (code == 13 || code == 90) {
+            battleTurnOrder = Math.floor(Math.random() * 2);
+
             Action();
         } else {gameCursor = 1 - gameCursor}
 
@@ -464,6 +508,8 @@ window.onkeydown = (e) => {
     }
 
     if (gamePhase == 7) {
+        gamePhase = 8;
+
         SetMessage('You died!...', null);
 
         return;
@@ -471,6 +517,8 @@ window.onkeydown = (e) => {
 
     if (gamePhase == 8) {
         SetMessage('Game over', null);
+
+        return;
     }
 
     gameMessage_1 = null;
