@@ -1,10 +1,13 @@
-'use strict';;
+import ENGINE from './engine.js';
+
+'use strict';
+
 const FONT = '12px monospace';
 const FONT_STYLE = '#ffffff';
 const WINDOW_STYLE = 'rgba(0, 0, 0, 0.75)';
 const CHARACTER_WIDTH = 8;
 const CHARACTER_HEIGHT = 9;
-const START_HP = 20;
+const START_HP = 1220;
 const START_X = 15;
 const START_Y = 17;
 const WIDTH = 128;
@@ -13,11 +16,9 @@ const SCREEN_WIDTH = 8;
 const SCREEN_HEIGHT = 8;
 const MAP_WIDTH = 32;
 const MAP_HEIGHT = 32;
-const INTERVAL = 33;
 const SCROLL = 1;
-const SMOOTH = 0;
+const SMOOTH = false;
 const TILE_COLUMN = 4;
-const TILE_ROW = 4;
 const TILE_SIZE = 8;
 
 const gameKey = new Uint8Array(0x100);
@@ -33,7 +34,7 @@ let gamePlayerX = START_X * TILE_SIZE + TILE_SIZE / 2;
 let gamePlayerY = START_Y * TILE_SIZE + TILE_SIZE / 2;
 let gameMovingX = 0;
 let gameMovingY = 0;
-let gameItem = 0;
+let gameItem = true;
 let gamePhase = 0;
 let gameCursor = 0;
 let gameMessage_1 = null;
@@ -44,7 +45,6 @@ let gameImageMonster;
 let gameImageBoss;
 let gameEnemyType;
 let battleTurnOrder;
-// let $gameScreen;
 let gameWidth;
 let gameHeight;
 
@@ -53,8 +53,18 @@ const gameFilePlayer = './img/player.png';
 const gameFileMonster = './img/monster.png';
 const gameFileBoss = './img/boss.png';
 
+const track_1 = './music/Unknown_World.mp3';
+const track_2 = './music/Inn.mp3';
+const track_3 = './music/Fight.mp3';
+const track_4 = './music/Enemy_Defeated.mp3';
+const track_5 = './music/Level_Up.mp3';
+const track_6 = './music/King_Dragon.mp3';
+const track_7 = './music/Finale.mp3';
+const track_8 = './music/Dead.mp3';
+
 const gameEncounter = [0, 0, 0, 1, 0, 0, 2, 3, 0, 0, 0, 0, 0, 0, 0, 0];
 const gameMonstersNames = ['Slime', 'Rabbit', 'Knight', 'Dragon', 'Demon Lord'];
+const musicTracks = [track_1, track_2, track_3, track_4, track_5, track_6, track_7, track_8];
 
 const gameMap = [
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -90,30 +100,50 @@ const gameMap = [
     7, 15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 7, 7, 7, 0, 0, 0, 0, 0,
     7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 7, 7, 7, 7, 7,
 ];
+let audio;
+const loadMusic = music => {
+    //let $player = document.querySelector('.music-player');
+//     let $player = document.createElement('audio');
+//     $player.setAttribute('preload', 'auto');
+//     $player.setAttribute('controls', 'none');
+//     //$player.style.display = 'none';
+//     $player.src = mus;
+//    // let body = document.body;
+//     document.body.append($player);
+    audio = new Audio();
+    //audio.setAttribute('preload', 'auto');
+    audio.autoplay = true;
+    audio.loop = true;
+    audio.src = music;
+    //audio.play();
+};
 
-const Action = () => {
+const battleScreen = () => {
     gamePhase++;
 
     if (((gamePhase + battleTurnOrder) & 1) == 0) {
         const enemyDamage = calculateDamage(gameEnemyType + 2);
+        const enemyMessage_1 = `${gameMonstersNames[gameEnemyType]} attacks!`;
+        const enemyMessage_2 = `${enemyDamage} Damage`;
 
-        SetMessage(`The ${gameMonstersNames[gameEnemyType]} attacks!`, `${enemyDamage} Damage`);
+        setMessage(enemyMessage_1, enemyMessage_2);
 
         gameHP -= enemyDamage;
 
-       //gameHP <= 0 && (gamePhase = 7);//?
-    if (gameHP <= 0) { 
-        gameHP = 0;   
-        gamePhase = 7;
-    };
+        if (gameHP <= 0) { 
+            gameHP = 0;   
+            gamePhase = 7;
+        };
 
         return;
     }
 
     if (gameCursor == 0) {
         const heroDamage = calculateDamage(gameLvl + 1);
+        const heroMessage_1 = 'You attack!';
+        const heroMessage_2 = `${heroDamage} Damage`;
 
-        SetMessage('You attack!', `${heroDamage} Damage`);
+        setMessage(heroMessage_1, heroMessage_2);
 
         gameEnemyTypeHP -= heroDamage;
         gameEnemyTypeHP <= 0 && (gamePhase = 5);
@@ -122,25 +152,25 @@ const Action = () => {
     }
 
     if (Math.random() < 0.5) {
-        SetMessage('You ran away...', null);
+        setMessage('You ran away...', null);
 
         gamePhase = 6;
 
         return;
     }
 
-    SetMessage('You ran away...', 'But You have been turned around');
+    setMessage('You ran away...', 'but escape fails!');
 };
 
-const AppearEnemy = target => {
+const appearEnemy = target => {
     gamePhase = 1;
     gameEnemyTypeHP = target * 3 + 5;
     gameEnemyType = target;
 
-    SetMessage('The enemy is here!', null);
+    setMessage('The Enemy', 'appears!');
 };
 
-const GainExp = amount => {
+const gainExp = amount => {
     gameExp += amount;
 
     while (gameLvl * (gameLvl + 1) * 2 <= gameExp) {
@@ -149,98 +179,90 @@ const GainExp = amount => {
     }
 };
 
-const CommandFight = () => {
+const battleCommand = () => {
     gamePhase = 2;
     gameCursor = 0;
         
-    SetMessage(' Fight', ' Run');
+    setMessage(' Fight', ' Run');
 };
 
-const DrawEncounter = game => {
+const drawEncounter = game => {
     game.fillStyle = '#000000';
     game.fillRect(0, 0, WIDTH, HEIGHT);
 
-
     if (gamePhase <= 5) {
         if (isBoss()) {
-            game.drawImage(
-                gameImageBoss, WIDTH / 2 - gameImageBoss.width / 2,
-                HEIGHT / 2 - gameImageBoss.height / 2
-            );
+            let w = gameImageBoss.width;
+            let h = gameImageBoss.height;
+            const bossWidth = Math.floor(128 / 2 - w) + TILE_SIZE * 2;
+            const bossHeight = Math.floor(120 / 2 - h) + TILE_COLUMN * 5;
+
+            game.drawImage(gameImageBoss,bossWidth,bossHeight);
+
         } else {
             let w = gameImageMonster.width / 4;
             let h = gameImageMonster.height;
 
+            const monsterWidth = Math.floor(WIDTH / 2 - w / 2);
+            const monsterHeight = Math.floor(HEIGHT / 2 - h / 2);
+
             game.drawImage(
-                gameImageMonster, gameEnemyType * w, 0, w, h, 
-                Math.floor(WIDTH / 2 - w / 2), 
-                Math.floor(HEIGHT / 2 - h / 2), w, h
+                gameImageMonster, gameEnemyType * w, 0, 
+                w, h, monsterWidth, monsterHeight, w, h
             );
         }    
     }
 
-    DrawStatus(game);
-    DrawMessage(game);
+    drawStatus(game);
+    drawMessage(game);
 
     if (gamePhase == 2) {
         game.fillText('⇒', 6, 96 + 14 * gameCursor);
     }
 };
 
-const DrawField = game => {
+const drawField = game => {
     let mx = Math.floor(gamePlayerX / TILE_SIZE);
     let my = Math.floor(gamePlayerY / TILE_SIZE);
+    let ipw = WIDTH / 2 - CHARACTER_WIDTH / 2;
+    let iph = HEIGHT / 2 - CHARACTER_HEIGHT + TILE_SIZE / 2;
+    let frame = (gameFrame >> 4 & 1) * CHARACTER_WIDTH;
 
     for (let dy = -SCREEN_HEIGHT; dy <= SCREEN_HEIGHT; dy++) {
         let ty = my + dy;
-        let playerY = (ty + MAP_HEIGHT) % MAP_HEIGHT;
+        let py = (ty + MAP_HEIGHT) % MAP_HEIGHT;
+        let tyw = ty * TILE_SIZE + HEIGHT / 2 - gamePlayerY;
 
         for (let dx = -SCREEN_WIDTH; dx <= SCREEN_WIDTH; dx++) {
             let tx = mx + dx;
-            let playerX = (tx + MAP_WIDTH) % MAP_WIDTH;
+            let px = (tx + MAP_WIDTH) % MAP_WIDTH;
+            let txw = tx * TILE_SIZE + WIDTH / 2 - gamePlayerX;
 
-            DrawTile(
-                game, tx * TILE_SIZE + WIDTH / 2 - gamePlayerX, 
-                ty * TILE_SIZE + HEIGHT / 2 - gamePlayerY, 
-                gameMap[playerY * MAP_WIDTH + playerX]
-            );   
+            drawTile(game, txw, tyw, gameMap[py * MAP_WIDTH + px]);   
         }        
     }
 
-    // $game.fillStyle = '#ff0000';
-    // $game.fillRect(0, HEIGHT / 2 - 1, WIDTH, 2);
-    // $game.fillRect(WIDTH / 2 - 1, 0, 2, HEIGHT);
-
     game.drawImage(
-        gameImgPlayer, (gameFrame >> 4 & 1) * CHARACTER_WIDTH, gameAngle * CHARACTER_HEIGHT, CHARACTER_WIDTH, CHARACTER_HEIGHT, 
-        WIDTH / 2 - CHARACTER_WIDTH / 2, HEIGHT / 2 - CHARACTER_HEIGHT + TILE_SIZE / 2, CHARACTER_WIDTH, CHARACTER_HEIGHT
+        gameImgPlayer, frame, 
+        gameAngle * CHARACTER_HEIGHT, 
+        CHARACTER_WIDTH, CHARACTER_HEIGHT, ipw, 
+        iph, CHARACTER_WIDTH, CHARACTER_HEIGHT
     );
 
-    game.fillStyle = WINDOW_STYLE;//!
+    game.fillStyle = WINDOW_STYLE;
     game.fillRect(2, 2, 44, 37);
 
-    DrawStatus(game);
-    DrawMessage(game);//!
+    drawStatus(game);
+    drawMessage(game);
 };
 
-const DrawMain = () => {
-    const $game = TUG.GR.mG;
+const drawMain = () => {
+    const $game = ENGINE.GR.mG;
 
-    gamePhase <= 1 ? DrawField($game) : DrawEncounter($game);
-
-    
-
-    // $game.fillStyle = WINDOW_STYLE;
-    // $game.fillRect(20, 3, 105, 15);
-    // $game.font = FONT;
-    // $game.fillStyle = FONT_STYLE;
-    // $game.fillText(
-    //     `x=${gamePlayerX} y=${gamePlayerY} m=${gameMap[my * MAP_WIDTH + mx]}`,
-    //     25, 15
-    // );
+    gamePhase <= 1 ? drawField($game) : drawEncounter($game);
 };
 
-const DrawMessage = game => {
+const drawMessage = game => {
     if (!gameMessage_1) return;
 
     game.fillStyle = WINDOW_STYLE;
@@ -252,27 +274,25 @@ const DrawMessage = game => {
     gameMessage_2 && game.fillText(gameMessage_2, 6, 110); //!!
 };
 
-const DrawStatus = game => {
+const drawStatus = game => {
     game.font = FONT;
     game.fillStyle = FONT_STYLE;
-   // game.fillText(`Lv ${gameLvl}`, 4, 13);
+    
     game.fillText(`Lv `, 4, 13);
-    DrawTextR(game, gameLvl, 36, 13);
-    //game.fillText(`HP ${gameHP}`, 4, 25);
+    drawTextR(game, gameLvl, 45, 13);
     game.fillText(`HP `, 4, 25);
-    DrawTextR(game, gameHP, 36, 25);
-   // game.fillText(`Exp ${gameExp}`, 4, 37);
+    drawTextR(game, gameHP, 45, 25);
     game.fillText(`Exp `, 4, 37);
-    DrawTextR(game, gameExp, 36, 37);
+    drawTextR(game, gameExp, 45, 37);
 };
 
-const DrawTextR = (game, str, x, y) => {
+const drawTextR = (game, str, x, y) => {
     game.textAlign = 'right';
     game.fillText(str, x, y);
     game.textAlign = 'left';
 };
 
-const DrawTile = (game, x, y, index) => {
+const drawTile = (game, x, y, index) => {
     const indexX = (index % TILE_COLUMN) * TILE_SIZE;
     const indexY = Math.floor(index / TILE_COLUMN) * TILE_SIZE;
 
@@ -299,31 +319,31 @@ const loadImages = () => {
     gameImageBoss.src = gameFileBoss;
 };
 
-// function SetMessage(text_1, text_2 = null); // IE
+// function setMessage(text_1, text_2 = null); // IE
 
-const SetMessage = (text_1, text_2) => {
+const setMessage = (text_1, text_2) => {
     gameMessage_1 = text_1;
     gameMessage_2 = text_2;
 };
 
-const TickField = () => {
+const tickField = () => {
     if (gamePhase != 0) return;
 
     if (gameMovingX != 0 || gameMovingY != 0 || gameMessage_1) {
 
     } else if (gameKey[37]) {   
-        gameAngle = 1;                       //
+        gameAngle = 1;                       
         gameMovingX = -TILE_SIZE;
     } else if (gameKey[38]) {
-        gameAngle = 3;                       //
+        gameAngle = 3;                       
         gameMovingY = -TILE_SIZE
     } else if (gameKey[39]) {
-        gameAngle = 2;                       //
+        gameAngle = 2;                       
         gameMovingX = TILE_SIZE
     } else if (gameKey[40]) {
-        gameAngle = 0;                       //
+        gameAngle = 0;                       
         gameMovingY = TILE_SIZE
-    }; //? switch case
+    };
 
     let mx = Math.floor((gamePlayerX + gameMovingX) / TILE_SIZE);
     let my = Math.floor((gamePlayerY + gameMovingY) / TILE_SIZE);
@@ -335,6 +355,10 @@ const TickField = () => {
 
     let m = gameMap[my * MAP_WIDTH + mx];
 
+    if (m == 3 || m == 6 || m ==7) {//!
+        audio.src = musicTracks[0]
+    };
+
     if (m < 3) {
         gameMovingX = 0;
         gameMovingY = 0;
@@ -343,38 +367,48 @@ const TickField = () => {
     if (Math.abs(gameMovingX) + Math.abs(gameMovingY) == SCROLL) {
         if (m == 8 || m == 9) {
             gameHP = gameMonsterHP;
-            SetMessage('Slay the  Demon Lord!', null);
+
+            setMessage('Slay the', 'Demon Lord!');
+            //audio.src = '';
+            audio.src = musicTracks[1];
+            audio.loop = false;
+            //audio.src = musicTracks[0];//!
         }
 
         if (m == 10 || m == 11) {
             gameHP = gameMonsterHP;
-            SetMessage('There\'s another village', 'in the far west!');
+
+            setMessage('There\'s another', 'village...');
+            setMessage('in the far east.', null);
         }
 
         if (m == 12) {
             gameHP = gameMonsterHP;
-            SetMessage('The key is', 'in a cave!');
+
+            setMessage('The key is', 'in a cave!');
         }
 
         if (m == 13) {
-            gameItem = 1;
-            SetMessage('I got the key!', null);
+            gameItem = !gameItem;
+
+            setMessage('You got the key!', null);
         }
 
         if (m == 14) {
-            if (gameItem == 0) {
+            if (!gameItem) {
                 gamePlayerY -= TILE_SIZE;
-                SetMessage('I need a key!', null);
+
+                setMessage('You need a key!', null);
             } else {
-                SetMessage('The door is open.', null);
+                setMessage('The door is open.', null);
             }
         }
 
         if (m == 15) {
-            AppearEnemy(gameMonstersNames.length - 1);
+            appearEnemy(gameMonstersNames.length - 1);
         }
 
-        if (Math.random() * 4 < gameEncounter[m]) {
+        if (Math.random() * 40 < gameEncounter[m]) {//?
             let target = Math.abs(
                 gamePlayerX / TILE_SIZE - START_X) + 
                 Math.abs(gamePlayerY / TILE_SIZE - START_Y
@@ -387,14 +421,14 @@ const TickField = () => {
             target = Math.floor(target / 16);
             target = Math.min(target, gameMonstersNames.length - 2);
 
-            AppearEnemy(target);
+            appearEnemy(target);
         }
     }   
 
-    gamePlayerX += TUG.Sign(gameMovingX) * SCROLL;
-    gamePlayerY += TUG.Sign(gameMovingY) * SCROLL;
-    gameMovingX -= TUG.Sign(gameMovingX) * SCROLL;
-    gameMovingY -= TUG.Sign(gameMovingY) * SCROLL;
+    gamePlayerX += ENGINE.sign(gameMovingX) * SCROLL;
+    gamePlayerY += ENGINE.sign(gameMovingY) * SCROLL;
+    gameMovingX -= ENGINE.sign(gameMovingX) * SCROLL;
+    gameMovingY -= ENGINE.sign(gameMovingY) * SCROLL;
 
     gamePlayerX += (MAP_WIDTH * TILE_SIZE);
     gamePlayerX %= (MAP_WIDTH * TILE_SIZE);
@@ -402,19 +436,19 @@ const TickField = () => {
     gamePlayerY %= (MAP_HEIGHT * TILE_SIZE);
 };
 
-const WmPaint = () => {
-    DrawMain();
+const windowPaint = () => {
+    drawMain();
 
     const $canvas = document.getElementById('main');
     const $game = $canvas.getContext('2d');
 
     $game.drawImage(
-        TUG.GR.mCanvas, 0, 0, TUG.GR.mCanvas.width, TUG.GR.mCanvas.height,
+        ENGINE.GR.mCanvas, 0, 0, ENGINE.GR.mCanvas.width, ENGINE.GR.mCanvas.height,
         0, 0, gameWidth, gameHeight
     );
 };
 
-const WmSize = () => {
+const windowSize = () => {
     const $canvas = document.getElementById('main');
 
     $canvas.width = window.innerWidth;
@@ -431,27 +465,27 @@ const WmSize = () => {
         gameWidth = gameHeight * WIDTH / HEIGHT;
 };
 
-TUG.onTimer = function(d) { //!
+ENGINE.onTimer = d => {
     if (!gameMessage_1) {
         while (d--) {
             gameFrame++;
 
-            TickField();
-        }    
-    }    
+            tickField();
+        }
+    }
 
-    WmPaint();
-}
+    windowPaint();
+};
 
-window.onkeydown = (e) => {
-    let code = e.keyCode;
+window.onkeydown = ({ keyCode }) => {
+    let code = keyCode;
 
     if (gameKey[code] != 0) return;
 
     gameKey[code] = 1;
 
     if (gamePhase == 1) {
-        CommandFight();
+        battleCommand();
 
         return;
     }
@@ -460,20 +494,20 @@ window.onkeydown = (e) => {
         if (code == 13 || code == 90) {
             battleTurnOrder = Math.floor(Math.random() * 2);
 
-            Action();
+            battleScreen();
         } else {gameCursor = 1 - gameCursor}
 
         return;
     }
 
     if (gamePhase == 3) {
-        Action();
+        battleScreen();
 
         return;
     }
 
     if (gamePhase == 4) {
-        CommandFight();
+        battleCommand();
 
         return;
     };
@@ -481,15 +515,17 @@ window.onkeydown = (e) => {
     if (gamePhase == 5) {
         gamePhase = 6;
 
-        GainExp(gameEnemyType + 1);
-        SetMessage('The Enemy has been defeated!', null);
+        gainExp(gameEnemyType + 1);
+        setMessage('The Enemy has', 'been defeated!');
 
         return;
     }
 
     if (gamePhase == 6) {
         if (isBoss() && gameCursor == 0) {
-            SetMessage('Demon Lord is defeated', 'and peace has returned to the world.');
+            setMessage('Demon Lord', 'is defeated...');
+            setMessage('and peace has', 'returned to');
+            setMessage('the world.', 'Congratulations!');
 
             return;
         }    
@@ -500,13 +536,13 @@ window.onkeydown = (e) => {
     if (gamePhase == 7) {
         gamePhase = 8;
 
-        SetMessage('You died!...', null);
+        setMessage('You died!...', null);
 
         return;
     }
 
     if (gamePhase == 8) {
-        SetMessage('Game over', null);
+        setMessage('Game over', null);
 
         return;
     }
@@ -514,17 +550,17 @@ window.onkeydown = (e) => {
     gameMessage_1 = null;
 };
 
-window.onkeyup = (e) => {
-    let code = e.keyCode;
+window.onkeyup = ({ keyCode }) => {
+    let code = keyCode;
 
     gameKey[code] = 0;
 };
 
 window.onload = () => {
     loadImages();
+    loadMusic(musicTracks[0]);//!
+    windowSize();    
 
-    WmSize();    
-
-    window.addEventListener('resize', () => WmSize());
-    TUG.init();
+    window.addEventListener('resize', () => windowSize());
+    ENGINE.init();
 };
