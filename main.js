@@ -43,15 +43,18 @@ let gameImgMap;
 let gameImgPlayer;
 let gameImageMonster;
 let gameImageBoss;
+let gameImageTrueBoss;
 let gameEnemyType;
 let battleTurnOrder;
 let gameWidth;
 let gameHeight;
+let audio;
 
 const gameFileMap = './img/map.png';
 const gameFilePlayer = './img/player.png';
 const gameFileMonster = './img/monster.png';
 const gameFileBoss = './img/boss.png';
+const gameFileTrueBoss = './img/finalboss.png';
 
 const track_1 = './music/Unknown_World.mp3';
 const track_2 = './music/Inn.mp3';
@@ -63,7 +66,7 @@ const track_7 = './music/Finale.mp3';
 const track_8 = './music/Dead.mp3';
 
 const gameEncounter = [0, 0, 0, 1, 0, 0, 2, 3, 0, 0, 0, 0, 0, 0, 0, 0];
-const gameMonstersNames = ['Slime', 'Rabbit', 'Knight', 'Dragon', 'Demon Lord'];
+const gameMonstersNames = ['Slime', 'Rabbit', 'Knight', 'Dragon', 'DemonLord'];
 const musicTracks = [track_1, track_2, track_3, track_4, track_5, track_6, track_7, track_8];
 
 const gameMap = [
@@ -100,12 +103,17 @@ const gameMap = [
     7, 15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 7, 7, 7, 0, 0, 0, 0, 0,
     7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 7, 7, 7, 7, 7,
 ];
-let audio;
-const loadMusic = music => {
+
+const loadMusic = () => {
     audio = new Audio();
     audio.autoplay = true;
     audio.loop = true;
+    audio.src = musicTracks[0];
+};
+
+const changeMusic = (music, loop) => {
     audio.src = music;
+    audio.loop = loop;
 };
 
 const battleScreen = () => {
@@ -163,9 +171,13 @@ const appearEnemy = target => {
 const gainExp = amount => {
     gameExp += amount;
 
+    changeMusic(musicTracks[3]);
+
     while (gameLvl * (gameLvl + 1) * 2 <= gameExp) {
         gameLvl++;
         gameMonsterHP += 4 + Math.floor(Math.random() * 3);
+
+        changeMusic(musicTracks[4]);
     }
 };
 
@@ -182,13 +194,22 @@ const drawEncounter = game => {
 
     if (gamePhase <= 5) {
         if (isBoss()) {
-            let w = gameImageBoss.width;
-            let h = gameImageBoss.height;
-            const bossWidth = Math.floor(128 / 2 - w) + TILE_SIZE * 2;
-            const bossHeight = Math.floor(120 / 2 - h) + TILE_COLUMN * 5;
+            if (gameLvl < 10) {
+                let w = gameImageBoss.width;
+                let h = gameImageBoss.height;
+                const bossWidth = Math.floor(128 / 2 - w) + TILE_SIZE * 2;
+                const bossHeight = Math.floor(120 / 2 - h) + TILE_COLUMN * 5;
 
-            game.drawImage(gameImageBoss,bossWidth,bossHeight);
+                game.drawImage(gameImageBoss, bossWidth, bossHeight);
 
+            } else {
+                let w = gameImageTrueBoss.width;
+                let h = gameImageTrueBoss.height;
+                const bossWidth = Math.floor(128 / 2 - w) + TILE_SIZE * 7;
+                const bossHeight = Math.floor(120 / 2 - h) + TILE_COLUMN * 9;
+
+                game.drawImage(gameImageTrueBoss, bossWidth, bossHeight);
+            }    
         } else {
             let w = gameImageMonster.width / 4;
             let h = gameImageMonster.height;
@@ -261,7 +282,7 @@ const drawMessage = game => {
     game.fillStyle = FONT_STYLE;
     game.fillText(gameMessage_1, 6, 96);
 
-    gameMessage_2 && game.fillText(gameMessage_2, 6, 110); //!!
+    gameMessage_2 && game.fillText(gameMessage_2, 6, 110);
 };
 
 const drawStatus = game => {
@@ -307,6 +328,9 @@ const loadImages = () => {
 
     gameImageBoss = new Image();
     gameImageBoss.src = gameFileBoss;
+
+    gameImageTrueBoss = new Image();
+    gameImageTrueBoss.src = gameFileTrueBoss;
 };
 
 // function setMessage(text_1, text_2 = null); // IE
@@ -354,24 +378,26 @@ const tickField = () => {
         if (m == 8 || m == 9) {
             gameHP = gameMonsterHP;
 
+            changeMusic(musicTracks[1]);
             setMessage('Slay the', 'Demon Lord!');
         }
 
         if (m == 10 || m == 11) {
             gameHP = gameMonsterHP;
 
-            setMessage('There\'s another', 'village...');
-            setMessage('in the far east.', null);
+            changeMusic(musicTracks[1]);
+            setMessage('Go to a village', 'in the east...');
         }
 
         if (m == 12) {
             gameHP = gameMonsterHP;
 
+            changeMusic(musicTracks[1]);
             setMessage('The key is', 'in a cave!');
         }
 
         if (m == 13) {
-            gameItem = !gameItem;
+            gameItem = true;
 
             setMessage('You got the key!', null);
         }
@@ -388,9 +414,10 @@ const tickField = () => {
 
         if (m == 15) {
             appearEnemy(gameMonstersNames.length - 1);
+            changeMusic(musicTracks[5]);
         }
 
-        if (Math.random() * 40 < gameEncounter[m]) {//?
+        if (Math.random() * 10 < gameEncounter[m]) {
             let target = Math.abs(
                 gamePlayerX / TILE_SIZE - START_X) + 
                 Math.abs(gamePlayerY / TILE_SIZE - START_Y
@@ -468,6 +495,7 @@ window.onkeydown = ({ keyCode }) => {
 
     if (gamePhase == 1) {
         battleCommand();
+        changeMusic(musicTracks[2], true);
 
         return;
     }
@@ -477,7 +505,9 @@ window.onkeydown = ({ keyCode }) => {
             battleTurnOrder = Math.floor(Math.random() * 2);
 
             battleScreen();
-        } else {gameCursor = 1 - gameCursor}
+        } else {
+            gameCursor = 1 - gameCursor
+        };
 
         return;
     }
@@ -506,19 +536,20 @@ window.onkeydown = ({ keyCode }) => {
     if (gamePhase == 6) {
         if (isBoss() && gameCursor == 0) {
             setMessage('Demon Lord', 'is defeated...');
-            setMessage('and peace has', 'returned to');
-            setMessage('the world.', 'Congratulations!');
+            changeMusic(musicTracks[6]);
 
             return;
         }    
 
         gamePhase = 0;
+        gamePhase == 0 && changeMusic(musicTracks[0], true);
     }
 
     if (gamePhase == 7) {
         gamePhase = 8;
 
         setMessage('You died!...', null);
+        changeMusic(musicTracks[7]);
 
         return;
     }
@@ -540,7 +571,7 @@ window.onkeyup = ({ keyCode }) => {
 
 window.onload = () => {
     loadImages();
-    loadMusic(musicTracks[0]);
+    loadMusic();
     windowSize();    
 
     window.addEventListener('resize', () => windowSize());

@@ -6,12 +6,20 @@
     <meta http-equiv="Content-Script-Type" content="text/javascript">
     <link rel="shortcut icon" href="./img/dragonwarrior.ico">
     <title>Dragon Quest</title>
+    <style>
+        body {
+            margin: 0; 
+            overflow: hidden;
+            background-image: url('./img/DragonQuest-bg.jpg');
+            height: 100vh;
+            background-repeat: no-repeat;
+            background-size: cover;
+            background-position: center;
+        }
+    </style>
     <script src="main.js" defer type="module"></script>
 </head>
-<body style="margin: 0; overflow: hidden">
-    <canvas id="main"></canvas>
-    <!-- <audio class="music-playe" autoplay controls loop src="">
-          Your browser does not support the <code>audio</code> element.
-      </audio> -->
+<body></body>
+    <canvas id="main" width="864" height="648" style="position: absolute; left: 288px;"></canvas>
 </body>
 </html>
