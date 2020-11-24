@@ -7,7 +7,7 @@ const FONT_STYLE = '#ffffff';
 const WINDOW_STYLE = 'rgba(0, 0, 0, 0.75)';
 const CHARACTER_WIDTH = 8;
 const CHARACTER_HEIGHT = 9;
-const START_HP = 1220;
+const START_HP = 20;
 const START_X = 15;
 const START_Y = 17;
 const WIDTH = 128;
@@ -34,7 +34,7 @@ let gamePlayerX = START_X * TILE_SIZE + TILE_SIZE / 2;
 let gamePlayerY = START_Y * TILE_SIZE + TILE_SIZE / 2;
 let gameMovingX = 0;
 let gameMovingY = 0;
-let gameItem = true;
+let gameItem = false;
 let gamePhase = 0;
 let gameCursor = 0;
 let gameMessage_1 = null;
@@ -102,20 +102,10 @@ const gameMap = [
 ];
 let audio;
 const loadMusic = music => {
-    //let $player = document.querySelector('.music-player');
-//     let $player = document.createElement('audio');
-//     $player.setAttribute('preload', 'auto');
-//     $player.setAttribute('controls', 'none');
-//     //$player.style.display = 'none';
-//     $player.src = mus;
-//    // let body = document.body;
-//     document.body.append($player);
     audio = new Audio();
-    //audio.setAttribute('preload', 'auto');
     audio.autoplay = true;
     audio.loop = true;
     audio.src = music;
-    //audio.play();
 };
 
 const battleScreen = () => {
@@ -355,10 +345,6 @@ const tickField = () => {
 
     let m = gameMap[my * MAP_WIDTH + mx];
 
-    if (m == 3 || m == 6 || m ==7) {//!
-        audio.src = musicTracks[0]
-    };
-
     if (m < 3) {
         gameMovingX = 0;
         gameMovingY = 0;
@@ -369,10 +355,6 @@ const tickField = () => {
             gameHP = gameMonsterHP;
 
             setMessage('Slay the', 'Demon Lord!');
-            //audio.src = '';
-            audio.src = musicTracks[1];
-            audio.loop = false;
-            //audio.src = musicTracks[0];//!
         }
 
         if (m == 10 || m == 11) {
@@ -558,7 +540,7 @@ window.onkeyup = ({ keyCode }) => {
 
 window.onload = () => {
     loadImages();
-    loadMusic(musicTracks[0]);//!
+    loadMusic(musicTracks[0]);
     windowSize();    
 
     window.addEventListener('resize', () => windowSize());
