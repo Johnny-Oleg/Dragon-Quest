@@ -10,16 +10,37 @@
         body {
             margin: 0; 
             overflow: hidden;
-            background-image: url('./img/DragonQuest-bg.jpg');
+
             height: 100vh;
+            padding: 0;
+            box-sizing: border-box;
+            background-color: #f5f5f5;
+            /* background-image: url('./img/DragonQuest-bg.jpg');
             background-repeat: no-repeat;
             background-size: cover;
-            background-position: center;
+            background-position: center; */
+        }
+
+        /* canvas{
+            width: 864px;
+            height: 648px;                
+        } */
+
+        @media (min-width: 1924px) {
+            canvas {
+                margin-left: 85%;
+            }
+        }
+
+        @media (min-width: 1439px) and (max-width: 1440px) {
+            canvas {
+                margin-left: 22%;
+            }
         }
     </style>
     <script src="main.js" defer type="module"></script>
 </head>
-<body></body>
-    <canvas id="main" width="864" height="648" style="position: absolute; left: 288px;"></canvas>
+<body>
+    <canvas id="main"></canvas>
 </body>
 </html>

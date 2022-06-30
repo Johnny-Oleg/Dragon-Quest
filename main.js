@@ -1,6 +1,6 @@
-import ENGINE from './engine.js';
-
 'use strict';
+
+import ENGINE from './engine.js';
 
 const FONT = '12px monospace';
 const FONT_STYLE = '#ffffff';
@@ -197,16 +197,16 @@ const drawEncounter = game => {
             if (gameLvl < 10) {
                 let w = gameImageBoss.width;
                 let h = gameImageBoss.height;
-                const bossWidth = Math.floor(128 / 2 - w) + TILE_SIZE * 2;
-                const bossHeight = Math.floor(120 / 2 - h) + TILE_COLUMN * 5;
+                const bossWidth = Math.floor(WIDTH / 2 - w) + TILE_SIZE * 2;
+                const bossHeight = Math.floor(HEIGHT / 2 - h) + TILE_COLUMN * 5;
 
                 game.drawImage(gameImageBoss, bossWidth, bossHeight);
 
             } else {
                 let w = gameImageTrueBoss.width;
                 let h = gameImageTrueBoss.height;
-                const bossWidth = Math.floor(128 / 2 - w) + TILE_SIZE * 7;
-                const bossHeight = Math.floor(120 / 2 - h) + TILE_COLUMN * 9;
+                const bossWidth = Math.floor(WIDTH / 2 - w) + TILE_SIZE * 7;
+                const bossHeight = Math.floor(HEIGHT / 2 - h) + TILE_COLUMN * 9;
 
                 game.drawImage(gameImageTrueBoss, bossWidth, bossHeight);
             }    
@@ -261,7 +261,7 @@ const drawField = game => {
     );
 
     game.fillStyle = WINDOW_STYLE;
-    game.fillRect(2, 2, 44, 37);
+    game.fillRect(2, 2, 44, 40);
 
     drawStatus(game);
     drawMessage(game);
